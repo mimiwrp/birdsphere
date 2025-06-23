@@ -276,15 +276,15 @@ const FamilyTree = ({ birdFamilies, onBirdClick }) => {
       
       // Gentle bird animations
       birdMeshes.forEach((bird, index) => {
-        bird.rotation.y += 0.01;
+        // bird.rotation.y += 0.01;
         const time = Date.now() * 0.001;
         bird.position.y += Math.sin(time + index) * 0.002;
       });
       
       // Auto-rotate tree slowly
-      if (treeGroup) {
-        treeGroup.rotation.y += 0.002;
-      }
+      // if (treeGroup) {
+      //   treeGroup.rotation.y += 0.002;
+      // }
       
       camera.lookAt(0, 2, 0);
       renderer.render(scene, camera);
