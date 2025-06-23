@@ -1,0 +1,36 @@
+enum BirdSize {
+  TINY
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+type Bird {
+  id: ID!
+  name: String!
+  scientificName: String!
+  size: BirdSize!
+  wingspan: String!
+  habitat: [String!]!
+  description: String!
+  imageUrl: String!
+  audioUrl: String!
+  isEndangered: Boolean!
+  funFact: String!
+  family: BirdFamily!
+}
+
+type BirdFamily {
+  id: ID!
+  name: String!
+  color: String!
+  description: String!
+  birds: [Bird!]!
+}
+
+type Query {
+  birdFamilies: [BirdFamily!]!
+  birdFamily(id: ID!): BirdFamily
+  bird(id: ID!): Bird
+  allBirds: [Bird!]!
+}
