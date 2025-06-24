@@ -4,6 +4,7 @@ import FamilyTree from './components/FamilyTree';
 import BirdInfo from './components/BirdInfo';
 import Header from './components/UI/Header';
 import Legend from './components/UI/Legend';
+import BirdTable from './components/BirdTable';
 
 // Create Apollo Client
 const client = new ApolloClient({
@@ -39,6 +40,7 @@ const GET_BIRD_FAMILIES = gql`
 // Main component that uses GraphQL
 function BirdSphereApp() {
   const [selectedBird, setSelectedBird] = useState(null);
+  const [showTable, setShowTable] = useState(false); // New state for table visibility
   const { loading, error, data } = useQuery(GET_BIRD_FAMILIES);
 
   const handleBirdClick = (bird) => {
@@ -118,14 +120,73 @@ function BirdSphereApp() {
       {/* Header */}
       <Header />
 
-      {/* 3D Scene */}
+      {/* Full-Width 3D Scene */}
       <FamilyTree 
         birdFamilies={data.birdFamilies}
         onBirdClick={handleBirdClick}
+        selectedBird={selectedBird}
       />
 
       {/* Legend */}
       <Legend birdFamilies={data.birdFamilies} />
+
+      {/* Toggle Button for Bird Table */}
+      <button
+        onClick={() => setShowTable(!showTable)}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.3)',
+          borderRadius: '25px',
+          padding: '12px 20px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          color: '#2c3e50',
+          transition: 'all 0.3s ease',
+          zIndex: 1000,
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = 'rgba(255, 255, 255, 1)';
+          e.target.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'rgba(255, 255, 255, 0.9)';
+          e.target.style.transform = 'scale(1)';
+        }}
+      >
+        {showTable ? '🔽 Hide Bird Table' : '📋 View Bird Table'}
+      </button>
+
+      {/* Collapsible Bird Table Overlay */}
+      {showTable && (
+        <div style={{
+          position: 'absolute',
+          top: '80px',
+          right: '20px',
+          width: '400px',
+          height: 'calc(100vh - 120px)',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(15px)',
+          borderRadius: '20px',
+          border: '2px solid rgba(255, 255, 255, 0.3)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          zIndex: 999,
+          animation: 'slideIn 0.3s ease-out',
+          overflow: 'hidden'
+        }}>
+          <BirdTable 
+            birdFamilies={data.birdFamilies}
+            selectedBird={selectedBird}
+            onBirdSelect={handleBirdClick}
+            onPlayAudio={handlePlayAudio}
+          />
+        </div>
+      )}
 
       {/* Bird Info Popup */}
       {selectedBird && (
@@ -135,6 +196,20 @@ function BirdSphereApp() {
           onPlayAudio={handlePlayAudio}
         />
       )}
+
+      {/* CSS Animation for table slide-in */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 
-const FamilyTree = ({ birdFamilies, onBirdClick }) => {
+const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
