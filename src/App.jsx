@@ -198,7 +198,7 @@ function BirdSphereApp() {
       )}
 
       {/* CSS Animation for table slide-in */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideIn {
           from {
             transform: translateX(100%);

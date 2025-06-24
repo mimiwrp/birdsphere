@@ -12,8 +12,6 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
 
   useEffect(() => {
     if (!birdFamilies || birdFamilies.length === 0) return;
-    
-    console.log('Creating 3D scene...'); // Debug log
 
     // Clear any existing content
     if (mountRef.current) {
@@ -63,8 +61,7 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
     // Create trunk
     const trunkGeometry = new THREE.CylinderGeometry(0.4, 0.6, 10);
     const trunkMaterial = new THREE.MeshPhongMaterial({ 
-      color: 0x8B4513,
-      roughness: 0.8
+      color: 0x8B4513
     });
     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
     trunk.position.y = -2;
@@ -276,17 +273,15 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
       
       // Gentle bird animations
       birdMeshes.forEach((bird, index) => {
-        // bird.rotation.y += 0.01;
         const time = Date.now() * 0.001;
         bird.position.y += Math.sin(time + index) * 0.002;
       });
       
-      // Auto-rotate tree slowly
+      // Auto-rotate tree slowly - DISABLED
       // if (treeGroup) {
       //   treeGroup.rotation.y += 0.002;
       // }
       
-      camera.lookAt(0, 2, 0);
       renderer.render(scene, camera);
     };
 
@@ -306,7 +301,7 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
       
       renderer.dispose();
     };
-  }, [birdFamilies, onBirdClick]);
+  }, [birdFamilies]); // Only re-create scene when birdFamilies data changes
 
   // Handle resize
   useEffect(() => {
