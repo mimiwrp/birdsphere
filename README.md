@@ -1,12 +1,37 @@
-# React + Vite
+# 🌐 BirdSphere - 3D Bird Encyclopedia
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive 3D bird family tree with WebGL visualization and GraphQL backend.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Start GraphQL server (Terminal 1)
+npm run server
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Start React app (Terminal 2) 
+npm run dev
+```
+
+**URLs:**
+- React App: http://localhost:5173
+- GraphQL Playground: http://localhost:4000/graphql
+
+
+## Current Features
+
+- **3D Tree**: Three.js WebGL scene with clickable bird spheres
+- **GraphQL**: Real API integration (fetches static data via Apollo)
+- **Collapsible Table**: Right-side overlay with all birds listed
+- **Bird Images**: Local photos in `/public/images/birds/`
+- **No Auto-Rotation**: Static tree that maintains camera position
+- **Two-way Selection**: Click birds in 3D or table, highlights both ways
+
+## Tech Stack
+
+- **Frontend**: React + Vite, Three.js, Apollo Client
+- **Backend**: GraphQL (Apollo Server), Express  
+- **3D**: WebGL, OrbitControls for camera
+- **Styling**: CSS-in-JS, glassmorphism design
