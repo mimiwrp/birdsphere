@@ -5,6 +5,7 @@ import BirdInfo from './components/BirdInfo';
 import Header from './components/UI/Header';
 import Legend from './components/UI/Legend';
 import BirdTable from './components/BirdTable';
+import { birdFamilies } from './data/birds'; // Import static data as fallback
 
 // Create Apollo Client
 const client = new ApolloClient({
@@ -37,10 +38,10 @@ const GET_BIRD_FAMILIES = gql`
   }
 `;
 
-// Main component that uses GraphQL
+// Main component that uses GraphQL with fallback
 function BirdSphereApp() {
   const [selectedBird, setSelectedBird] = useState(null);
-  const [showTable, setShowTable] = useState(false); // New state for table visibility
+  const [showTable, setShowTable] = useState(false);
   const { loading, error, data } = useQuery(GET_BIRD_FAMILIES);
 
   const handleBirdClick = (bird) => {
@@ -57,8 +58,12 @@ function BirdSphereApp() {
     alert('🎵 Bird call playing! (Audio implementation in next iteration)');
   };
 
-  // Loading state
-  if (loading) {
+  // Use GraphQL data if available, otherwise fall back to static data
+  const birdData = data?.birdFamilies || birdFamilies;
+  const isUsingFallback = !data?.birdFamilies;
+
+  // Loading state (only show if we don't have fallback data)
+  if (loading && !isUsingFallback) {
     return (
       <div style={{
         width: '100vw',
@@ -81,34 +86,10 @@ function BirdSphereApp() {
     );
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div style={{
-        width: '100vw',
-        height: '100vh',
-        background: 'linear-gradient(135deg, #87CEEB 0%, #98FB98 50%, #F0E68C 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#e74c3c',
-        fontSize: '20px',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '20px' }}>❌</div>
-        <div>GraphQL Server Error</div>
-        <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.8 }}>
-          Make sure to run: npm run server
-        </div>
-        <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.6 }}>
-          {error.message}
-        </div>
-      </div>
-    );
-  }
+  // No error state - just use fallback data if GraphQL fails
+  // This ensures the app always works, even when deployed without a server
 
-  // Success state - render the app
+  // Success state - render the app (works with both GraphQL and static data)
   return (
     <div style={{
       width: '100vw',
@@ -120,15 +101,34 @@ function BirdSphereApp() {
       {/* Header */}
       <Header />
 
+      {/* Status indicator for development */}
+      {isUsingFallback && (
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(255, 193, 7, 0.9)',
+          color: '#856404',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          fontSize: '12px',
+          zIndex: 1001,
+          backdropFilter: 'blur(10px)'
+        }}>
+          📡 Using static data (GraphQL server offline)
+        </div>
+      )}
+
       {/* Full-Width 3D Scene */}
       <FamilyTree 
-        birdFamilies={data.birdFamilies}
+        birdFamilies={birdData}
         onBirdClick={handleBirdClick}
         selectedBird={selectedBird}
       />
 
       {/* Legend */}
-      <Legend birdFamilies={data.birdFamilies} />
+      <Legend birdFamilies={birdData} />
 
       {/* Toggle Button for Bird Table */}
       <button
@@ -180,7 +180,7 @@ function BirdSphereApp() {
           overflow: 'hidden'
         }}>
           <BirdTable 
-            birdFamilies={data.birdFamilies}
+            birdFamilies={birdData}
             selectedBird={selectedBird}
             onBirdSelect={handleBirdClick}
             onPlayAudio={handlePlayAudio}
