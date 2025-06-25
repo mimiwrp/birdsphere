@@ -90,7 +90,7 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
     scene.add(environmentGroup);
 
     // Updated camera position to see all environments
-    camera.position.set(20, 15, 25);
+    camera.position.set(0, 10, 20);
     camera.lookAt(0, 5, 0);
 
     // Mouse controls
