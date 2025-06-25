@@ -10,14 +10,23 @@ export const createBirdMesh = (birdData) => {
   };
   const size = sizeMap[birdData.size] || 0.5;
   
+  // Debug: Let's see what properties are available
+  console.log('Bird data properties:', birdData);
+  console.log('originalFamilyColor:', birdData.originalFamilyColor);
+  console.log('familyColor:', birdData.familyColor);
+  console.log('environmentColor:', birdData.environmentColor);
+  
   // Create bird group
   const birdGroup = new THREE.Group();
+  
+  // Use the family color from the original family data
+  const birdColor = birdData.originalFamilyColor || birdData.familyColor || birdData.environmentColor || '#ff0000';
   
   // Bird body (ellipsoid)
   const bodyGeometry = new THREE.SphereGeometry(size, 16, 16);
   bodyGeometry.scale(1.2, 0.8, 0.6); // Make it more oval
   const birdMaterial = new THREE.MeshPhongMaterial({ 
-    color: birdData.familyColor || birdData.environmentColor,
+    color: birdColor,
     shininess: 60,
     transparent: true,
     opacity: 0.9
