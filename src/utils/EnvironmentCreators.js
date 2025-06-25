@@ -44,7 +44,7 @@ export const createTreeEnvironment = (parent, treeData) => {
   const foliageGeometry = new THREE.SphereGeometry(3, 12, 8);
   const foliageMaterial = new THREE.MeshPhongMaterial({ 
     color: 0x228B22,
-    transparent: true,
+    transparent: false,
     opacity: 0.8
   });
   const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
@@ -67,7 +67,7 @@ export const createTallTreeEnvironment = (parent, treeData) => {
   const foliageGeometry = new THREE.SphereGeometry(2.5, 12, 8);
   const foliageMaterial = new THREE.MeshPhongMaterial({ 
     color: 0x2F5233,
-    transparent: true,
+    transparent: false,
     opacity: 0.8
   });
   const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
