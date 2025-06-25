@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
+import { getAllBirdsWithEnvironments, debugEnvironmentSetup } from '../utils/birdHabitatClassifier.js';
 
 const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
   const mountRef = useRef(null);
@@ -7,11 +8,15 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
   const birdMeshesRef = useRef([]);
-  const treeGroupRef = useRef(null);
+  const environmentGroupRef = useRef(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!birdFamilies || birdFamilies.length === 0) return;
+
+    // TEST THE CLASSIFIER (Remove this later)
+    console.log('🧪 Testing Bird Habitat Classifier...');
+    debugEnvironmentSetup(birdFamilies);
 
     // Clear any existing content
     if (mountRef.current) {
@@ -43,118 +48,57 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
       mountRef.current.appendChild(renderer.domElement);
     }
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    // Enhanced Lighting Setup
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
     scene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 5);
+    directionalLight.position.set(15, 20, 10);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.left = -30;
+    directionalLight.shadow.camera.right = 30;
+    directionalLight.shadow.camera.top = 30;
+    directionalLight.shadow.camera.bottom = -30;
     scene.add(directionalLight);
 
-    // Create tree group
-    const treeGroup = new THREE.Group();
-    treeGroupRef.current = treeGroup;
+    // Create main environment group
+    const environmentGroup = new THREE.Group();
+    environmentGroupRef.current = environmentGroup;
 
-    // Create trunk
-    const trunkGeometry = new THREE.CylinderGeometry(0.4, 0.6, 10);
-    const trunkMaterial = new THREE.MeshPhongMaterial({ 
-      color: 0x8B4513
-    });
-    const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-    trunk.position.y = -2;
-    trunk.castShadow = true;
-    trunk.receiveShadow = true;
-    treeGroup.add(trunk);
+    // Get environment data
+    const { environments, allBirds } = getAllBirdsWithEnvironments(birdFamilies);
 
-    // Create branches and birds
+    // Create environment zones
+    createWaterEnvironment(environmentGroup, environments.water);
+    // createSkyEnvironment(environmentGroup, environments.sky);
+    createTreeEnvironment(environmentGroup, environments.tree);
+    createTallTreeEnvironment(environmentGroup, environments.treeHigh);
+    createGardenEnvironment(environmentGroup, environments.garden);
+    // createGroundEnvironment(environmentGroup, environments.ground);
+
+    // Create birds for all environments
     const birdMeshes = [];
-    
-    birdFamilies.forEach((family, familyIndex) => {
-      const angle = (familyIndex / birdFamilies.length) * Math.PI * 2;
-      
-      // Create main branch
-      const branchGeometry = new THREE.CylinderGeometry(0.15, 0.25, 5);
-      const branchMaterial = new THREE.MeshPhongMaterial({ color: 0x654321 });
-      const branch = new THREE.Mesh(branchGeometry, branchMaterial);
-      
-      // Position branch
-      const branchRadius = 4;
-      branch.position.x = Math.cos(angle) * branchRadius;
-      branch.position.y = 3 + familyIndex * 0.8;
-      branch.position.z = Math.sin(angle) * branchRadius;
-      
-      // Rotate branch to point outward
-      branch.rotation.z = angle;
-      branch.rotation.x = Math.PI / 2;
-      
-      branch.castShadow = true;
-      branch.receiveShadow = true;
-      treeGroup.add(branch);
-
-      // Add birds to this branch
-      family.birds.forEach((bird, birdIndex) => {
-        const sizeMap = { 
-          TINY: 0.4, 
-          SMALL: 0.6, 
-          MEDIUM: 0.9, 
-          LARGE: 1.3 
-        };
-        const size = sizeMap[bird.size] || 0.6;
-        
-        // Create bird sphere
-        const birdGeometry = new THREE.SphereGeometry(size, 20, 20);
-        const birdMaterial = new THREE.MeshPhongMaterial({ 
-          color: family.color,
-          shininess: 80,
-          transparent: true,
-          opacity: 0.9
-        });
-        
-        const birdMesh = new THREE.Mesh(birdGeometry, birdMaterial);
-        
-        // Position birds along the branch
-        const branchProgress = (birdIndex + 1) / (family.birds.length + 1);
-        const birdDistance = 2 + branchProgress * 3;
-        
-        birdMesh.position.x = branch.position.x + Math.cos(angle) * birdDistance;
-        birdMesh.position.y = branch.position.y + (birdIndex - family.birds.length/2) * 1.2;
-        birdMesh.position.z = branch.position.z + Math.sin(angle) * birdDistance;
-        
-        // Add slight random variation
-        birdMesh.position.y += (Math.random() - 0.5) * 0.5;
-        birdMesh.position.x += (Math.random() - 0.5) * 0.3;
-        birdMesh.position.z += (Math.random() - 0.5) * 0.3;
-        
-        birdMesh.castShadow = true;
-        birdMesh.receiveShadow = true;
-        
-        // Store bird data
-        birdMesh.userData = { 
-          ...bird, 
-          family: family.name,
-          familyColor: family.color,
-          familyId: family.id
-        };
-        
-        treeGroup.add(birdMesh);
-        birdMeshes.push(birdMesh);
-      });
+    allBirds.forEach(birdData => {
+      const birdMesh = createBirdMesh(birdData);
+      environmentGroup.add(birdMesh);
+      birdMeshes.push(birdMesh);
     });
 
     birdMeshesRef.current = birdMeshes;
-    scene.add(treeGroup);
+    scene.add(environmentGroup);
 
-    // Camera position
-    camera.position.set(8, 6, 12);
-    camera.lookAt(0, 2, 0);
+    // Updated camera position to see all environments
+    camera.position.set(20, 15, 25);
+    camera.lookAt(0, 5, 0);
 
     // Mouse controls
     let mouseDown = false;
     let mouseX = 0;
     let mouseY = 0;
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
 
     const handleMouseDown = (event) => {
       mouseDown = true;
@@ -167,16 +111,13 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
     const handleMouseUp = (event) => {
       mouseDown = false;
       
-      // Check if this was a drag or a click
       const dragDistance = Math.sqrt(
         Math.pow(event.clientX - dragStart.x, 2) + 
         Math.pow(event.clientY - dragStart.y, 2)
       );
       
-      // If moved less than 5 pixels, consider it a click
       if (dragDistance < 5) {
         isDragging = false;
-        // Let the click handler process this
         setTimeout(() => handleClick(event), 10);
       } else {
         isDragging = true;
@@ -189,7 +130,6 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
       const deltaX = event.clientX - mouseX;
       const deltaY = event.clientY - mouseY;
       
-      // Mark as dragging if moved enough
       const dragDistance = Math.sqrt(
         Math.pow(event.clientX - dragStart.x, 2) + 
         Math.pow(event.clientY - dragStart.y, 2)
@@ -199,12 +139,12 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
         isDragging = true;
       }
       
-      if (treeGroup) {
-        treeGroup.rotation.y += deltaX * 0.01;
-        treeGroup.rotation.x -= deltaY * 0.005;
+      if (environmentGroup) {
+        environmentGroup.rotation.y += deltaX * 0.01;
+        environmentGroup.rotation.x -= deltaY * 0.005;
         
         // Limit vertical rotation
-        treeGroup.rotation.x = Math.max(-0.5, Math.min(0.5, treeGroup.rotation.x));
+        environmentGroup.rotation.x = Math.max(-0.5, Math.min(0.5, environmentGroup.rotation.x));
       }
       
       mouseX = event.clientX;
@@ -212,18 +152,15 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
     };
 
     const handleWheel = (event) => {
-      camera.position.z += event.deltaY * 0.01;
-      camera.position.z = Math.max(8, Math.min(25, camera.position.z));
+      camera.position.z += event.deltaY * 0.02;
+      camera.position.z = Math.max(10, Math.min(40, camera.position.z));
     };
 
     // Click detection
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    let isDragging = false;
-    let dragStart = { x: 0, y: 0 };
 
     const handleClick = (event) => {
-      // Prevent click during drag
       if (isDragging) return;
       
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -243,16 +180,15 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
         
         // Highlight clicked bird
         clickedBird.material.emissive.setHex(0x444444);
-        clickedBird.scale.setScalar(1.2);
+        clickedBird.scale.setScalar(1.3);
         
-        // Call the click handler with a small delay to ensure state updates
         setTimeout(() => {
           if (onBirdClick) {
             onBirdClick(clickedBird.userData);
           }
         }, 50);
       } else {
-        // Clicked empty space - reset all birds
+        // Reset all birds
         birdMeshes.forEach(mesh => {
           mesh.material.emissive.setHex(0x000000);
           mesh.scale.setScalar(1);
@@ -271,16 +207,42 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
     const animate = () => {
       requestAnimationFrame(animate);
       
-      // Gentle bird animations
+      // Environment-specific animations
+      const time = Date.now() * 0.001;
       birdMeshes.forEach((bird, index) => {
-        const time = Date.now() * 0.001;
-        bird.position.y += Math.sin(time + index) * 0.002;
+        const birdData = bird.userData;
+        
+        switch (birdData.habitat) {
+          case 'water':
+            // Bobbing animation
+            bird.position.y += Math.sin(time * 0.8 + index) * 0.003;
+            break;
+          case 'sky':
+            // Floating animation
+            bird.position.y += Math.sin(time * 0.3 + index) * 0.004;
+            bird.position.x += Math.cos(time * 0.2 + index) * 0.002;
+            break;
+          case 'tree':
+            // Gentle perching movement
+            bird.position.y += Math.sin(time * 1.2 + index) * 0.001;
+            break;
+          case 'treeHigh':
+            // Drumming/pecking animation for woodpeckers
+            // bird.position.x += Math.sin(time * 8 + index) * 0.05;
+            // bird.position.y += Math.abs(Math.sin(time * 6 + index)) * 0.02;
+            break;
+          case 'garden':
+            // Hovering animation for hummingbirds
+            // bird.position.x += Math.sin(time * 4 + index) * 0.08;
+            // bird.position.y += Math.cos(time * 5 + index) * 0.06;
+            // bird.position.z += Math.sin(time * 3 + index) * 0.05;
+            break;
+          case 'ground':
+            // Pecking motion
+            bird.position.y += Math.abs(Math.sin(time * 2 + index)) * 0.002;
+            break;
+        }
       });
-      
-      // Auto-rotate tree slowly - DISABLED
-      // if (treeGroup) {
-      //   treeGroup.rotation.y += 0.002;
-      // }
       
       renderer.render(scene, camera);
     };
@@ -301,7 +263,7 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
       
       renderer.dispose();
     };
-  }, [birdFamilies]); // Only re-create scene when birdFamilies data changes
+  }, [birdFamilies]);
 
   // Handle resize
   useEffect(() => {
@@ -325,16 +287,160 @@ const FamilyTree = ({ birdFamilies, onBirdClick, selectedBird }) => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          color: '#2c3e50',
+          color: '#87CEEB',
           fontSize: '20px',
           zIndex: 10
         }}>
-          🌳 Growing the bird family tree...
+          🌍 Creating bird environments...
         </div>
       )}
       <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
     </div>
   );
+};
+
+// Environment creation functions
+const createWaterEnvironment = (parent, waterData) => {
+  // Water base
+  const waterGeometry = new THREE.CylinderGeometry(4, 4, 0.2);
+  const waterMaterial = new THREE.MeshPhongMaterial({ 
+    color: 0x006994,
+    transparent: true,
+    opacity: 0.7,
+    shininess: 100
+  });
+  const water = new THREE.Mesh(waterGeometry, waterMaterial);
+  water.position.set(waterData.position.x, waterData.position.y, waterData.position.z);
+  water.receiveShadow = true;
+  parent.add(water);
+};
+
+const createSkyEnvironment = (parent, skyData) => {
+  // Cloud platform
+  const cloudGeometry = new THREE.BoxGeometry(6, 1, 4);
+  const cloudMaterial = new THREE.MeshPhongMaterial({ 
+    color: 0xF0F8FF,
+    transparent: true,
+    opacity: 0.6
+  });
+  const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+  cloud.position.set(skyData.position.x, skyData.position.y, skyData.position.z);
+  cloud.castShadow = true;
+  parent.add(cloud);
+};
+
+const createTreeEnvironment = (parent, treeData) => {
+  // Simplified tree trunk
+  const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.5, 6);
+  const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+  const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+  trunk.position.set(treeData.position.x, treeData.position.y, treeData.position.z);
+  trunk.castShadow = true;
+  trunk.receiveShadow = true;
+  parent.add(trunk);
+
+  // Tree foliage
+  const foliageGeometry = new THREE.SphereGeometry(3, 12, 8);
+  const foliageMaterial = new THREE.MeshPhongMaterial({ 
+    color: 0x228B22,
+    transparent: true,
+    opacity: 0.8
+  });
+  const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+  foliage.position.set(treeData.position.x, treeData.position.y + 4, treeData.position.z);
+  foliage.castShadow = true;
+  parent.add(foliage);
+};
+
+const createTallTreeEnvironment = (parent, treeData) => {
+  // Tall tree trunk for woodpeckers
+  const trunkGeometry = new THREE.CylinderGeometry(0.4, 0.6, 10);
+  const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x654321 });
+  const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+  trunk.position.set(treeData.position.x, treeData.position.y + 2, treeData.position.z);
+  trunk.castShadow = true;
+  trunk.receiveShadow = true;
+  parent.add(trunk);
+
+  // Taller tree crown
+  const foliageGeometry = new THREE.SphereGeometry(2.5, 12, 8);
+  const foliageMaterial = new THREE.MeshPhongMaterial({ 
+    color: 0x2F5233,
+    transparent: true,
+    opacity: 0.8
+  });
+  const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+  foliage.position.set(treeData.position.x, treeData.position.y + 8, treeData.position.z);
+  foliage.castShadow = true;
+  parent.add(foliage);
+};
+
+const createGardenEnvironment = (parent, gardenData) => {
+  // Garden base
+  const gardenGeometry = new THREE.CylinderGeometry(3, 3, 0.3);
+  const gardenMaterial = new THREE.MeshPhongMaterial({ color: 0x90EE90 });
+  const garden = new THREE.Mesh(gardenGeometry, gardenMaterial);
+  garden.position.set(gardenData.position.x, gardenData.position.y - 0.5, gardenData.position.z);
+  garden.receiveShadow = true;
+  parent.add(garden);
+
+  // Add colorful "flowers" (small spheres)
+  const flowerColors = [0xFF69B4, 0xFF6347, 0xFFD700, 0x9370DB, 0xFF4500];
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const radius = 1.5 + Math.random() * 1;
+    
+    const flowerGeometry = new THREE.SphereGeometry(0.15, 8, 6);
+    const flowerMaterial = new THREE.MeshPhongMaterial({ 
+      color: flowerColors[i % flowerColors.length],
+      shininess: 100
+    });
+    const flower = new THREE.Mesh(flowerGeometry, flowerMaterial);
+    
+    flower.position.set(
+      gardenData.position.x + Math.cos(angle) * radius,
+      gardenData.position.y + 0.2,
+      gardenData.position.z + Math.sin(angle) * radius
+    );
+    flower.castShadow = true;
+    parent.add(flower);
+  }
+};
+
+const createGroundEnvironment = (parent, groundData) => {
+  // Ground patch
+  const groundGeometry = new THREE.CylinderGeometry(4, 4, 0.2);
+  const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x8B7355 });
+  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+  ground.position.set(groundData.position.x, groundData.position.y, groundData.position.z);
+  ground.receiveShadow = true;
+  parent.add(ground);
+};
+
+const createBirdMesh = (birdData) => {
+  const sizeMap = { 
+    TINY: 0.3, 
+    SMALL: 0.5, 
+    MEDIUM: 0.8, 
+    LARGE: 1.1 
+  };
+  const size = sizeMap[birdData.size] || 0.5;
+  
+  const birdGeometry = new THREE.SphereGeometry(size, 16, 16);
+  const birdMaterial = new THREE.MeshPhongMaterial({ 
+    color: birdData.environmentColor,
+    shininess: 60,
+    transparent: true,
+    opacity: 0.9
+  });
+  
+  const birdMesh = new THREE.Mesh(birdGeometry, birdMaterial);
+  birdMesh.position.copy(birdData.position);
+  birdMesh.castShadow = true;
+  birdMesh.receiveShadow = true;
+  birdMesh.userData = birdData;
+  
+  return birdMesh;
 };
 
 export default FamilyTree;
